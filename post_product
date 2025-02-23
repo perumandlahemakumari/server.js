@@ -1,0 +1,30 @@
+const express = require('express');
+const { Pool } = require('pg');
+const cors = require('cors');
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+const pool = new Pool({
+    user: 'your_user',
+    host: 'your_host',
+    database: 'your_db',
+    password: 'your_password',
+    port: 5432
+});
+
+// API for farmers to post products
+app.post('/post_product', async (req, res) => {
+    const { farmer_id, name, description, price, quantity, location } = req.body;
+    const result = await pool.query(
+        'INSERT INTO products (farmer_id, name, description, price, quantity, location) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+        [farmer_id, name, description, price, quantity, location]
+    );
+    res.json({ message: 'Product posted successfully', productId: result.rows[0].id });
+});
+
+// Start server
+app.listen(5000, () => {
+    console.log("Server running on http://localhost:5000");
+});
