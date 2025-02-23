@@ -1,30 +1,27 @@
-const express = require('express');
-const { Pool } = require('pg');
-const cors = require('cors');
+from flask import Flask, request, jsonify
+import psycopg2
 
-const app = express();
-app.use(express.json());
-app.use(cors());
+app = Flask(__name__)
 
-const pool = new Pool({
-    user: 'your_user',
-    host: 'your_host',
-    database: 'your_db',
-    password: 'your_password',
-    port: 5432
-});
+# Connect to PostgreSQL
+conn = psycopg2.connect(
+    dbname="your_db",
+    user="your_user",
+    password="your_password",
+    host="your_host",
+    port="5432"
+)
 
-// API for farmers to post products
-app.post('/post_product', async (req, res) => {
-    const { farmer_id, name, description, price, quantity, location } = req.body;
-    const result = await pool.query(
-        'INSERT INTO products (farmer_id, name, description, price, quantity, location) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-        [farmer_id, name, description, price, quantity, location]
-    );
-    res.json({ message: 'Product posted successfully', productId: result.rows[0].id });
-});
+@app.route('/post_product', methods=['POST'])
+def post_product():
+    data = request.json
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO products (farmer_id, name, description, price, quantity, location)
+        VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+    """, (data['farmer_id'], data['name'], data['description'], data['price'], data['quantity'], data['location']))
+    conn.commit()
+    return jsonify({"message": "Product posted successfully"})
 
-// Start server
-app.listen(5000, () => {
-    console.log("Server running on http://localhost:5000");
-});
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000, debug=True)
